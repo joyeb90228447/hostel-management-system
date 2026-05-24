@@ -8,13 +8,13 @@ app = Flask(__name__)
 app.secret_key = "hostel_secret_key"
 
 # MySQL Connection
-db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="root2006",   # yaha apna password likho
-    database="hostel_db",
-    port=3307
-)
+#db = mysql.connector.connect(
+  #  host="localhost",
+  #  user="root",
+  #  password="root2006",   # yaha apna password likho
+  #  database="hostel_db",
+ #   port=3307
+#)
 
 cursor = db.cursor()
 
