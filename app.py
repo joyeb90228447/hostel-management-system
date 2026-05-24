@@ -122,16 +122,6 @@ def login_page():
             
     return render_template('login.html')
 
-@app.route('/admin', methods=['GET', 'POST'])
-def admin_login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-
-        if username == 'admin' and password == 'admin123':
-            return redirect('/dashboard')
-        else:
-            return "Invalid Admin Login"
 
     # Updated Admin Login Route with Session Tracking
 @app.route('/admin', methods=['GET', 'POST'])
