@@ -16,7 +16,7 @@ app.secret_key = "hostel_secret_key"
  #   port=3307
 #)
 
-cursor = db.cursor()
+#cursor = db.cursor()
 
 # Home Page
 @app.route('/')
@@ -53,7 +53,7 @@ def register():
     values = (name, email, phone, room, password)
 
     cursor.execute(sql, values)
-    db.commit()
+    #db.commit()
 
     return "Student Registered Successfully"
 # View Students
@@ -75,7 +75,7 @@ def delete_student(id):
 
     cursor.execute(sql, (id,))
 
-    db.commit()
+   # db.commit()
 
     return redirect('/view')
 # Complaint Page
@@ -103,7 +103,7 @@ def save_complaint():
 
     cursor.execute(sql, values)
 
-    db.commit()
+    #db.commit()
 
     return "Complaint Submitted Successfully"
 # Edit Student Page
@@ -146,7 +146,7 @@ def update_student(id):
 
     cursor.execute(sql, values)
 
-    db.commit()
+   # db.commit()
 
     return redirect('/view')
 # Student Login Page
@@ -244,7 +244,7 @@ def add_fee():
 
     cursor.execute(sql, values)
 
-    db.commit()
+   # db.commit()
 
     return redirect('/fees')
 # =========================
@@ -357,7 +357,7 @@ def add_room():
 
     cursor.execute(sql, values)
 
-    db.commit()
+    #db.commit()
 
     return redirect('/rooms')
 
@@ -402,7 +402,7 @@ def add_attendance():
 
     cursor.execute(sql, values)
 
-    db.commit()
+    #db.commit()
 
     return redirect('/attendance')
 
@@ -440,7 +440,7 @@ def add_notice():
 
     cursor.execute(sql, values)
 
-    db.commit()
+    #db.commit()
 
     return redirect('/notice')
 # =========================
