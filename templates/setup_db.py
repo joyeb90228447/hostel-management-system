@@ -1,69 +1,98 @@
 import mysql.connector
 
-# Apne Railway credentials yahan daalein
+# Connecting to your Railway instance
 db = mysql.connector.connect(
-    host="yamanote.proxy.rlwy.net",  # Apna actual host daalein
+    host="yamanote.proxy.rlwy.net",
     user="root",
-    password="LbfrGLXkJqOesqWowVbdPpPEWbehgMYq", # Apna password daalein
+    password="LbfrGLXkJqOesqWowVbdPpPEWbehgMYq",
     database="railway",
-    port=41887 # Apna actual port daalein
+    port=41887
 )
 
 cursor = db.cursor()
 
-# 1. Rooms Table
+print("Dropping old tables to clean up structural mismatches...")
+# Drop existing tables to clear conflicting columns safely
+cursor.execute("DROP TABLE IF EXISTS attendance;")
+cursor.execute("DROP TABLE IF EXISTS notices;")
+cursor.execute("DROP TABLE IF EXISTS fees;")
+cursor.execute("DROP TABLE IF EXISTS complaints;")
+cursor.execute("DROP TABLE IF EXISTS students;")
+cursor.execute("DROP TABLE IF EXISTS rooms;")
+
+print("Creating fresh, synchronized tables...")
+
+# 1. Rooms Table (Now contains 'status' and 'occupied'!)
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS rooms (
+CREATE TABLE rooms (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    room_number VARCHAR(10) UNIQUE NOT NULL,
+    room_no VARCHAR(50) UNIQUE NOT NULL,
     capacity INT NOT NULL,
-    available_beds INT NOT NULL
+    occupied INT DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'Available'
 )
 """)
-print("Rooms table checked/created.")
+print("- Rooms table created successfully.")
 
 # 2. Students Table
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS students (
+CREATE TABLE students (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    contact VARCHAR(15),
-    room_id INT,
-    FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
+    phone VARCHAR(20),
+    room_no VARCHAR(50),
+    password VARCHAR(255) NOT NULL
 )
 """)
-print("Students table checked/created.")
+print("- Students table created successfully.")
 
-# 3. Fees Table
+# 3. Complaints Table
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS fees (
+CREATE TABLE complaints (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT,
+    student_name VARCHAR(100) NOT NULL,
+    complaint TEXT NOT NULL,
+    date_raised TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+print("- Complaints table created successfully.")
+
+# 4. Fees Table
+cursor.execute("""
+CREATE TABLE fees (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_name VARCHAR(100) NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
-    payment_status VARCHAR(50) DEFAULT 'Pending',
-    payment_date DATE,
-    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+    status VARCHAR(50) DEFAULT 'Pending'
 )
 """)
-print("Fees table checked/created.")
+print("- Fees table created successfully.")
 
-# 4. Complaints Table
+# 5. Attendance Table
 cursor.execute("""
-CREATE TABLE IF NOT EXISTS complaints (
+CREATE TABLE attendance (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id INT,
-    description TEXT NOT NULL,
-    status VARCHAR(50) DEFAULT 'Pending',
-    date_raised TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+    student_name VARCHAR(100) NOT NULL,
+    date VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL
 )
 """)
-print("Complaints table checked/created.")
+print("- Attendance table created successfully.")
+
+# 6. Notices Table
+cursor.execute("""
+CREATE TABLE notices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    date_posted TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
+print("- Notices table created successfully.")
 
 db.commit()
 cursor.close()
 db.close()
 
-print("🎉 Saari tables successfully create ho gayi hain!")
+print("\n🎉 SUCCESS: All database tables match your app perfectly now!")

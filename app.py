@@ -133,13 +133,28 @@ def admin_login():
         else:
             return "Invalid Admin Login"
 
+    # Updated Admin Login Route with Session Tracking
+@app.route('/admin', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        if username == 'admin' and password == 'admin123':
+            session['admin_logged_in'] = True  # Creates login session token
+            return redirect('/dashboard')
+        else:
+            return "Invalid Admin Login"
+
     return render_template('admin_login.html')
 
-# ==========================================
-# DASHBOARD
-# ==========================================
+# Secured Dashboard Route
 @app.route('/dashboard')
 def dashboard():
+    # Session Guard: Protects dashboard from unauthorized URL inputs
+    if not session.get('admin_logged_in'):
+        return redirect('/admin')
+
     cursor.execute("SELECT COUNT(*) FROM students")
     total_students = cursor.fetchone()[0]
 
@@ -155,26 +170,6 @@ def dashboard():
         total_complaints=total_complaints,
         available_rooms=available_rooms
     )
-
-# ==========================================
-# ROOMS MANAGEMENT
-# ==========================================
-@app.route('/rooms')
-def rooms():
-    cursor.execute("SELECT * FROM rooms")
-    rooms_data = cursor.fetchall()
-    return render_template('rooms.html', rooms=rooms_data)
-
-@app.route('/add_room', methods=['POST'])
-def add_room():
-    room_no = request.form['room_no']
-    capacity = request.form['capacity']
-    occupied = request.form['occupied']
-
-    if int(occupied) >= int(capacity):
-        status = "Full"
-    else:
-        status = "Available"
 
     sql = "INSERT INTO rooms (room_no, capacity, occupied, status) VALUES (%s, %s, %s, %s)"
     values = (room_no, capacity, occupied, status)
