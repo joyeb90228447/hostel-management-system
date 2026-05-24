@@ -22,7 +22,7 @@ cursor = db.cursor()
 
 # Home Page
 @app.route('/')
-def home()
+def home():
 
     cursor.execute("SELECT COUNT(*) FROM students")
     total_students = cursor.fetchone()[0]
