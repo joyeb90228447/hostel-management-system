@@ -8,21 +8,21 @@ app = Flask(__name__)
 app.secret_key = "hostel_secret_key"
 
 import mysql.connector
-import os
+
 
 db = mysql.connector.connect(
-    host=os.getenv("MYSQLHOST"),
-    user=os.getenv("MYSQLUSER"),
-    password=os.getenv("MYSQLPASSWORD"),
-    database=os.getenv("MYSQLDATABASE"),
-    port=int(os.getenv("MYSQLPORT"))
+    host="mysql.railway.internal",
+    user="root",
+    password="LbfrGLXkJqOesqWowVbdPpPEWbehgMYq",
+    database="railway",
+    port=3306
 )
 
 cursor = db.cursor()
 
 # Home Page
 @app.route('/')
-def home():
+def home()
 
     cursor.execute("SELECT COUNT(*) FROM students")
     total_students = cursor.fetchone()[0]
