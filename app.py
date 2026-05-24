@@ -7,6 +7,24 @@ app = Flask(__name__)
 app.secret_key = "hostel_secret_key"
 
 # Database connection using environment variables
+def get_db_connection():
+    global db, cursor
+    try:
+        # Check if the connection is still alive
+        db.ping(reconnect=True, attempts=3, delay=2)
+    except Exception:
+        # Re-establish fresh connection if completely closed
+        db = mysql.connector.connect(
+            host=os.getenv("MYSQLHOST"),
+            user=os.getenv("MYSQLUSER"),
+            password=os.getenv("MYSQLPASSWORD"),
+            database=os.getenv("MYSQLDATABASE"),
+            port=int(os.getenv("MYSQLPORT"))
+        )
+        cursor = db.cursor(buffered=True)
+    return db, cursor
+
+# Initial connection setup on app boot
 db = mysql.connector.connect(
     host=os.getenv("MYSQLHOST"),
     user=os.getenv("MYSQLUSER"),
@@ -14,14 +32,28 @@ db = mysql.connector.connect(
     database=os.getenv("MYSQLDATABASE"),
     port=int(os.getenv("MYSQLPORT"))
 )
-
 cursor = db.cursor(buffered=True)
 
 # ==========================================
-# HOME PAGE
-# ==========================================
+# Home Page (With Reconnection Safety)
 @app.route('/')
 def home():
+    global db, cursor
+    try:
+        # Yeh check karega ki database connection zinda hai ya nahi
+        db.ping(reconnect=True, attempts=3, delay=2)
+    except Exception:
+        # Agar connection toot gaya hoga, toh naya connection banayega
+        db = mysql.connector.connect(
+            host=os.getenv("MYSQLHOST"),
+            user=os.getenv("MYSQLUSER"),
+            password=os.getenv("MYSQLPASSWORD"),
+            database=os.getenv("MYSQLDATABASE"),
+            port=int(os.getenv("MYSQLPORT"))
+        )
+        cursor = db.cursor(buffered=True)
+    
+    # Ab bina crash hue queries run hongi
     cursor.execute("SELECT COUNT(*) FROM students")
     total_students = cursor.fetchone()[0]
 
