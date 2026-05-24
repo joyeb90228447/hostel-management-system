@@ -7,16 +7,18 @@ from flask import send_file
 app = Flask(__name__)
 app.secret_key = "hostel_secret_key"
 
-# MySQL Connection
-#db = mysql.connector.connect(
-  #  host="localhost",
-  #  user="root",
-  #  password="root2006",   # yaha apna password likho
-  #  database="hostel_db",
- #   port=3307
-#)
+import mysql.connector
+import os
 
-#cursor = db.cursor()
+db = mysql.connector.connect(
+    host=os.getenv("MYSQLHOST"),
+    user=os.getenv("MYSQLUSER"),
+    password=os.getenv("MYSQLPASSWORD"),
+    database=os.getenv("MYSQLDATABASE"),
+    port=int(os.getenv("MYSQLPORT"))
+)
+
+cursor = db.cursor()
 
 # Home Page
 @app.route('/')
