@@ -62,7 +62,8 @@ def login_page():
             session['student_name'] = student[1]
             return redirect(f'/profile/{student[2]}')
         else:
-            return "Invalid Email or Password <br><a href='/login'>Try Again</a>"
+            # Render templates standard injection layer for safe back navigation inside app
+            return render_template('login.html', error="Invalid Student Credentials. Please try again.")
             
     return render_template('login.html')
 
