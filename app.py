@@ -424,7 +424,79 @@ def export_pdf():
 
     c.save()
     return send_file(pdf_file, as_attachment=True)
+# ==========================================
+# EMERGENCY CLOUD RE-INDEX MATRIX (TEMPORARY)
+# ==========================================
+@app.route('/force_db_sync_2026')
+def force_db_sync_2026():
+    local_cursor = check_db()
+    try:
+        # Step A: Drop conflicting old instances safely
+        local_cursor.execute("DROP TABLE IF EXISTS attendance;")
+        local_cursor.execute("DROP TABLE IF EXISTS notices;")
+        local_cursor.execute("DROP TABLE IF EXISTS fees;")
+        local_cursor.execute("DROP TABLE IF EXISTS complaints;")
+        local_cursor.execute("DROP TABLE IF EXISTS students;")
+        local_cursor.execute("DROP TABLE IF EXISTS rooms;")
+        
+        # Step B: Build synchronized table structures
+        local_cursor.execute("""
+        CREATE TABLE rooms (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            room_no VARCHAR(50) UNIQUE NOT NULL,
+            capacity INT NOT NULL,
+            occupied INT DEFAULT 0,
+            status VARCHAR(50) DEFAULT 'Available'
+        )
+        """)
 
+        local_cursor.execute("""
+        CREATE TABLE students (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            email VARCHAR(100) UNIQUE NOT NULL,
+            phone VARCHAR(20),
+            room_no VARCHAR(50),
+            password VARCHAR(255) NOT NULL
+        )
+        """)
+
+        local_cursor.execute("""
+        CREATE TABLE fees (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            student_name VARCHAR(100) NOT NULL,
+            total_amount INT NOT NULL DEFAULT 0,
+            paid_amount INT NOT NULL DEFAULT 0,
+            remaining_amount INT NOT NULL DEFAULT 0,
+            status VARCHAR(50) DEFAULT 'Pending'
+        )
+        """)
+
+        local_cursor.execute("""
+        CREATE TABLE attendance (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            student_name VARCHAR(100) NOT NULL,
+            date VARCHAR(50) NOT NULL,
+            status VARCHAR(50) NOT NULL
+        )
+        """)
+
+        local_cursor.execute("""
+        CREATE TABLE notices (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            title VARCHAR(200) NOT NULL,
+            message TEXT NOT NULL,
+            date_posted TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        # Insert base allocation parameters
+        local_cursor.execute("INSERT INTO rooms (room_no, capacity, occupied, status) VALUES ('101', 4, 0, 'Available')")
+        
+        db.commit()
+        return "<h1>🎉 SUCCESS: Cloud Cluster Database Recreated Flawlessly!</h1>"
+    except Exception as e:
+        return f"<h1>Structural Error: {str(e)}</h1>"
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)

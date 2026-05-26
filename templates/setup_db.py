@@ -1,6 +1,6 @@
 import mysql.connector
 
-# Connecting to your Railway instance
+# Directly connecting using your production live parameters
 db = mysql.connector.connect(
     host="yamanote.proxy.rlwy.net",
     user="root",
@@ -11,8 +11,7 @@ db = mysql.connector.connect(
 
 cursor = db.cursor()
 
-print("Dropping old tables to clean up structural mismatches...")
-# Drop existing tables to clear conflicting columns safely
+print("Force clean existing data maps...")
 cursor.execute("DROP TABLE IF EXISTS attendance;")
 cursor.execute("DROP TABLE IF EXISTS notices;")
 cursor.execute("DROP TABLE IF EXISTS fees;")
@@ -20,9 +19,8 @@ cursor.execute("DROP TABLE IF EXISTS complaints;")
 cursor.execute("DROP TABLE IF EXISTS students;")
 cursor.execute("DROP TABLE IF EXISTS rooms;")
 
-print("Creating fresh, synchronized tables...")
+print("Building modern schemas...")
 
-# 1. Rooms Table (Now contains 'status' and 'occupied'!)
 cursor.execute("""
 CREATE TABLE rooms (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -32,9 +30,7 @@ CREATE TABLE rooms (
     status VARCHAR(50) DEFAULT 'Available'
 )
 """)
-print("- Rooms table created successfully.")
 
-# 2. Students Table
 cursor.execute("""
 CREATE TABLE students (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -45,9 +41,7 @@ CREATE TABLE students (
     password VARCHAR(255) NOT NULL
 )
 """)
-print("- Students table created successfully.")
 
-# 3. Complaints Table
 cursor.execute("""
 CREATE TABLE complaints (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -56,20 +50,19 @@ CREATE TABLE complaints (
     date_raised TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 """)
-print("- Complaints table created successfully.")
 
-# 4. Fees Table
+# 🔥 FIXED DYNAMIC ENGINE STRUCTURE
 cursor.execute("""
 CREATE TABLE fees (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_name VARCHAR(100) NOT NULL,
-    amount DECIMAL(10,2) NOT NULL,
+    total_amount INT NOT NULL DEFAULT 0,
+    paid_amount INT NOT NULL DEFAULT 0,
+    remaining_amount INT NOT NULL DEFAULT 0,
     status VARCHAR(50) DEFAULT 'Pending'
 )
 """)
-print("- Fees table created successfully.")
 
-# 5. Attendance Table
 cursor.execute("""
 CREATE TABLE attendance (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -78,9 +71,7 @@ CREATE TABLE attendance (
     status VARCHAR(50) NOT NULL
 )
 """)
-print("- Attendance table created successfully.")
 
-# 6. Notices Table
 cursor.execute("""
 CREATE TABLE notices (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -89,10 +80,13 @@ CREATE TABLE notices (
     date_posted TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )
 """)
-print("- Notices table created successfully.")
 
 db.commit()
+
+# Insert an initial sample room to prevent empty tables view
+cursor.execute("INSERT INTO rooms (room_no, capacity, occupied, status) VALUES ('101', 4, 0, 'Available')")
+db.commit()
+
 cursor.close()
 db.close()
-
-print("\n🎉 SUCCESS: All database tables match your app perfectly now!")
+print("🎉 SUCCESS: All cloud tables recreated with custom calculation columns!")
