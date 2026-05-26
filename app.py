@@ -133,14 +133,38 @@ def register():
     name = request.form['name']
     email = request.form['email']
     phone = request.form['phone']
-    room = request.form['room']
+    room = request.form['room'].strip()  # .strip() filters out accidental spaces
     password = request.form['password']
 
     local_cursor = check_db()
+    
+    # 🛑 FLUSH VALIDATION: Check if room exists and has vacant beds before inserting student
+    local_cursor.execute("SELECT capacity, occupied FROM rooms WHERE room_no = %s", (room,))
+    room_data = local_cursor.fetchone()
+    
+    if not room_data:
+        return "<h3>Error: Allocated Room Number does not exist in inventory system.</h3><br><a href='/register_student_page'>Go Back</a>"
+        
+    capacity = room_data[0]
+    occupied = room_data[1]
+    
+    if occupied >= capacity:
+        return "<h3>Error: Target Room is already Full! Cannot allocate more students.</h3><br><a href='/register_student_page'>Go Back</a>"
+
+    # Step A: Save student data safely
     sql = "INSERT INTO students (name, email, phone, room_no, password) VALUES (%s, %s, %s, %s, %s)"
     local_cursor.execute(sql, (name, email, phone, room, password))
+    
+    # Step B: AUTOMATIC ROOM CAPACITY MINUS LOGIC (+1 Occupied / Status Flag)
+    new_occupied = occupied + 1
+    new_status = "Full" if new_occupied >= capacity else "Available"
+    
+    # Update rooms inventory status layers
+    update_room_sql = "UPDATE rooms SET occupied = %s, status = %s WHERE room_no = %s"
+    local_cursor.execute(update_room_sql, (new_occupied, new_status, room))
+        
+    # Thread safety reference global database commit
     db.commit()
-
     return redirect('/view')
 
 
@@ -275,11 +299,24 @@ def add_fee():
         return redirect('/admin')
 
     student_name = request.form['student_name']
-    amount = request.form['amount']
-    status = request.form['status']
+    total_amount = int(request.form['total_amount'])
+    paid_amount = int(request.form['paid_amount'])
+    
+    # 🧠 Dynamic Logic Math Engine
+    remaining_amount = total_amount - paid_amount
+    
+    # Auto-assign Status based on math results
+    if remaining_amount <= 0:
+        status = "Paid"
+        remaining_amount = 0  # Preclude negative balances
+    elif paid_amount > 0 and remaining_amount > 0:
+        status = "Partial"
+    else:
+        status = "Pending"
 
     local_cursor = check_db()
-    local_cursor.execute("INSERT INTO fees (student_name, amount, status) VALUES (%s, %s, %s)", (student_name, amount, status))
+    sql = "INSERT INTO fees (student_name, total_amount, paid_amount, remaining_amount, status) VALUES (%s, %s, %s, %s, %s)"
+    local_cursor.execute(sql, (student_name, total_amount, paid_amount, remaining_amount, status))
     db.commit()
     return redirect('/fees')
 
