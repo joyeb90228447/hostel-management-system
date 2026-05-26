@@ -65,5 +65,14 @@
         </div>
         {% endfor %}
     </div>
+    <script>
+        // Manually forces a virtual navigation layer into Webview history state stack
+        history.pushState(null, null, location.href);
+        window.onpopstate = function () {
+            history.go(1);
+            // Dynamic Internal Routing Override (Prevents Android Activity App Termination)
+            window.location.href = '/dashboard';
+        };
+    </script>
 </body>
 </html>

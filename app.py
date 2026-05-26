@@ -7,7 +7,7 @@ app = Flask(__name__)
 app.secret_key = "hostel_secret_key"
 
 # ==========================================
-# CENTRALIZED AUTOMATED RECONNECTION POOL
+# DATABASE RECONNECTION AUTOMATION ENGINE
 # ==========================================
 def check_db():
     global db, cursor
@@ -24,7 +24,7 @@ def check_db():
         cursor = db.cursor(buffered=True)
     return cursor
 
-# Connection instantiation on core runtime load
+# Initial boot connection setup
 db = mysql.connector.connect(
     host=os.getenv("MYSQLHOST"),
     user=os.getenv("MYSQLUSER"),
@@ -36,26 +36,16 @@ cursor = db.cursor(buffered=True)
 
 
 # ==========================================
-# GUEST PLATFORM ENVIRONMENT
+# CENTRAL PORTAL GATEWAY (APP OPEN SCREEN)
 # ==========================================
 @app.route('/')
-def home():
-    local_cursor = check_db()
-    local_cursor.execute("SELECT COUNT(*) FROM students")
-    total_students = local_cursor.fetchone()[0]
-
-    local_cursor.execute("SELECT COUNT(*) FROM complaints")
-    total_complaints = local_cursor.fetchone()[0]
-
-    return render_template(
-        'index.html',
-        total_students=total_students,
-        total_complaints=total_complaints
-    )
+def gateway_portal():
+    # Clear any stale session data on root access
+    return render_template('gateway.html')
 
 
 # ==========================================
-# AUTHENTICATION LOGISTICS TERMINAL
+# AUTHENTICATION ENGINE
 # ==========================================
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
@@ -72,7 +62,7 @@ def login_page():
             session['student_name'] = student[1]
             return redirect(f'/profile/{student[2]}')
         else:
-            return "Invalid Email or Password"
+            return "Invalid Email or Password <br><a href='/login'>Try Again</a>"
             
     return render_template('login.html')
 
@@ -87,7 +77,7 @@ def admin_login():
             session['admin_logged_in'] = True
             return redirect('/dashboard')
         else:
-            return "Invalid Admin Login"
+            return "Invalid Admin Login <br><a href='/admin'>Try Again</a>"
 
     return render_template('admin_login.html')
 
@@ -99,7 +89,7 @@ def logout():
 
 
 # ==========================================
-# ADMINISTRATIVE CONTROL MATRIX (SECURE)
+# ADMINISTRATIVE ECOSYSTEM (SECURED)
 # ==========================================
 @app.route('/dashboard')
 def dashboard():
@@ -125,10 +115,20 @@ def dashboard():
 
 
 # ==========================================
-# CONTROL PANEL SUB-SYSTEMS
+# ADMIN-ONLY STUDENT REGISTRATION & VIEW
 # ==========================================
+@app.route('/register_student_page')
+def register_student_page():
+    if not session.get('admin_logged_in'):
+        return redirect('/admin')
+    return render_template('register_student.html')
+
+
 @app.route('/register', methods=['POST'])
 def register():
+    if not session.get('admin_logged_in'):
+        return redirect('/admin')
+
     name = request.form['name']
     email = request.form['email']
     phone = request.form['phone']
@@ -140,7 +140,7 @@ def register():
     local_cursor.execute(sql, (name, email, phone, room, password))
     db.commit()
 
-    return "Student Registered Successfully! <br><a href='/'>Go Home</a>"
+    return redirect('/view')
 
 
 @app.route('/view')
@@ -206,7 +206,7 @@ def search_student():
 
 
 # ==========================================
-# INVENTORY CONTROL LOGISTICS
+# INVENTORY CONTROL MODULE
 # ==========================================
 @app.route('/rooms')
 def rooms():
@@ -230,14 +230,13 @@ def add_room():
     status = "Full" if int(occupied) >= int(capacity) else "Available"
 
     local_cursor = check_db()
-    sql = "INSERT INTO rooms (room_no, capacity, occupied, status) VALUES (%s, %s, %s, %s)"
-    local_cursor.execute(sql, (room_no, capacity, occupied, status))
+    local_cursor.execute("INSERT INTO rooms (room_no, capacity, occupied, status) VALUES (%s, %s, %s, %s)", (room_no, capacity, occupied, status))
     db.commit()
     return redirect('/rooms')
 
 
 # ==========================================
-# COMPLAINTS MATRIX OPERATIONS
+# COMPLAINTS MODULE
 # ==========================================
 @app.route('/complaint')
 def complaint_page():
@@ -253,11 +252,11 @@ def save_complaint():
     sql = "INSERT INTO complaints (student_name, complaint) VALUES (%s, %s)"
     local_cursor.execute(sql, (student_name, complaint))
     db.commit()
-    return "Complaint Submitted Successfully! <br><a href='/'>Go Home</a>"
+    return "Complaint Submitted Successfully! <br><a href='/complaint'>Submit Another</a>"
 
 
 # ==========================================
-# ECONOMIC MANAGEMENT LEDGER
+# FEES MANAGEMENT
 # ==========================================
 @app.route('/fees')
 def fees_page():
@@ -266,8 +265,7 @@ def fees_page():
 
     local_cursor = check_db()
     local_cursor.execute("SELECT * FROM fees")
-    fees_data = local_cursor.fetchall()
-    return render_template('fees.html', fees=fees_data)
+    return render_template('fees.html', fees=local_cursor.fetchall())
 
 
 @app.route('/add_fee', methods=['POST'])
@@ -280,14 +278,13 @@ def add_fee():
     status = request.form['status']
 
     local_cursor = check_db()
-    sql = "INSERT INTO fees (student_name, amount, status) VALUES (%s, %s, %s)"
-    local_cursor.execute(sql, (student_name, amount, status))
+    local_cursor.execute("INSERT INTO fees (student_name, amount, status) VALUES (%s, %s, %s)", (student_name, amount, status))
     db.commit()
     return redirect('/fees')
 
 
 # ==========================================
-# SECURITY TRACKER SYSTEM (ATTENDANCE)
+# ATTENDANCE PROTOCOLS
 # ==========================================
 @app.route('/attendance')
 def attendance():
@@ -296,8 +293,7 @@ def attendance():
 
     local_cursor = check_db()
     local_cursor.execute("SELECT * FROM attendance")
-    attendance_data = local_cursor.fetchall()
-    return render_template('attendance.html', attendance=attendance_data)
+    return render_template('attendance.html', attendance=local_cursor.fetchall())
 
 
 @app.route('/add_attendance', methods=['POST'])
@@ -310,14 +306,13 @@ def add_attendance():
     status = request.form['status']
 
     local_cursor = check_db()
-    sql = "INSERT INTO attendance (student_name, date, status) VALUES (%s, %s, %s)"
-    local_cursor.execute(sql, (student_name, date, status))
+    local_cursor.execute("INSERT INTO attendance (student_name, date, status) VALUES (%s, %s, %s)", (student_name, date, status))
     db.commit()
     return redirect('/attendance')
 
 
 # ==========================================
-# PUBLIC NETWORK ANNOUNCEMENT SYSTEM
+# COMMUNICATIONS SYSTEM (NOTICES)
 # ==========================================
 @app.route('/notice')
 def notice():
@@ -326,8 +321,7 @@ def notice():
 
     local_cursor = check_db()
     local_cursor.execute("SELECT * FROM notices")
-    notices_data = local_cursor.fetchall()
-    return render_template('notice.html', notices=notices_data)
+    return render_template('notice.html', notices=local_cursor.fetchall())
 
 
 @app.route('/add_notice', methods=['POST'])
@@ -339,14 +333,13 @@ def add_notice():
     message = request.form['message']
 
     local_cursor = check_db()
-    sql = "INSERT INTO notices (title, message) VALUES (%s, %s)"
-    local_cursor.execute(sql, (title, message))
+    local_cursor.execute("INSERT INTO notices (title, message) VALUES (%s, %s)", (title, message))
     db.commit()
     return redirect('/notice')
 
 
 # ==========================================
-# DATA CLUSTER ENDPOINTS (PROFILES & REPORT)
+# DATACLUSTER USER PROFILES
 # ==========================================
 @app.route('/profile/<email>')
 def profile(email):
@@ -361,16 +354,12 @@ def profile(email):
     fees_data = local_cursor.fetchall()
 
     local_cursor.execute("SELECT * FROM attendance WHERE student_name=%s", (student[1],))
-    attendance_data = local_cursor.fetchall()
-
-    return render_template(
-        'profile.html',
-        student=student,
-        fees=fees_data,
-        attendance=attendance_data
-    )
+    return render_template('profile.html', student=student, fees=fees_data, attendance=local_cursor.fetchall())
 
 
+# ==========================================
+# EXPORT DATA DATA TO PDF
+# ==========================================
 @app.route('/pdf')
 def export_pdf():
     if not session.get('admin_logged_in'):
