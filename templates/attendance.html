@@ -1,91 +1,107 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-
-<title>Attendance</title>
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusCore - Security Log Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root { --slate-dark: #0f172a; --slate-light: #f8fafc; --accent-blue: #2563eb; }
+        body { background-color: var(--slate-light); font-family: 'Segoe UI', system-ui, sans-serif; overflow-x: hidden; }
+        .sidebar { height: 100vh; width: 260px; position: fixed; top: 0; left: 0; background: var(--slate-dark); padding: 24px 16px; z-index: 1000; }
+        .sidebar-brand { color: #ffffff; font-size: 1.3rem; font-weight: 800; text-decoration: none; display: flex; align-items: center; padding-bottom: 24px; border-bottom: 1px solid #1e293b; margin-bottom: 24px; }
+        .sidebar-menu a { display: flex; align-items: center; padding: 12px 16px; color: #94a3b8; text-decoration: none; font-weight: 500; border-radius: 8px; margin-bottom: 4px; }
+        .sidebar-menu a:hover, .sidebar-menu a.active { color: #fff; background: #1e293b; }
+        .sidebar-menu a.active { background: var(--accent-blue); }
+        .sidebar-menu i { margin-right: 12px; width: 20px; }
+        .main-content { margin-left: 260px; padding: 40px; }
+        .glass-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; }
+        @media (max-width: 992px) {
+            .sidebar { width: 100%; height: auto; position: relative; padding: 16px; }
+            .sidebar-brand { display: none; }
+            .sidebar-menu { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+            .sidebar-menu a { padding: 8px 12px; font-size: 0.85rem; }
+            .main-content { margin-left: 0; padding: 20px; }
+        }
+    </style>
 </head>
-
-<body class="bg-dark text-light">
-
-<div class="container mt-5">
-
-<h1 class="mb-4">
-Attendance
-</h1>
-
-<form action="/add_attendance"
-      method="POST">
-
-<div class="row mb-4">
-
-<div class="col">
-<input type="text"
-       name="student_name"
-       class="form-control"
-       placeholder="Student Name">
-</div>
-
-<div class="col">
-<input type="date"
-       name="date"
-       class="form-control">
-</div>
-
-<div class="col">
-
-<select name="status"
-        class="form-control">
-
-<option>Present</option>
-<option>Absent</option>
-
-</select>
-
-</div>
-
-<div class="col">
-
-<button class="btn btn-primary w-100">
-Add
-</button>
-
-</div>
-
-</div>
-
-</form>
-
-<table class="table table-dark table-bordered">
-
-<tr>
-
-<th>ID</th>
-<th>Name</th>
-<th>Date</th>
-<th>Status</th>
-
-</tr>
-
-{% for a in attendance %}
-
-<tr>
-
-<td>{{ a[0] }}</td>
-<td>{{ a[1] }}</td>
-<td>{{ a[2] }}</td>
-<td>{{ a[3] }}</td>
-
-</tr>
-
-{% endfor %}
-
-</table>
-
-</div>
-
+<body>
+    <div class="sidebar">
+        <a href="/dashboard" class="sidebar-brand"><i class="fa-solid fa-shield-halved me-2 text-primary"></i>CampusCore</a>
+        <div class="sidebar-menu">
+            <a href="/dashboard"><i class="fa-solid fa-chart-line"></i>Dashboard</a>
+            <a href="/view"><i class="fa-solid fa-users"></i>Students</a>
+            <a href="/rooms"><i class="fa-solid fa-bed"></i>Rooms</a>
+            <a href="/fees"><i class="fa-solid fa-wallet"></i>Fees</a>
+            <a href="/attendance" class="active"><i class="fa-solid fa-calendar-check"></i>Attendance</a>
+            <a href="/notice"><i class="fa-solid fa-flag"></i>Notice Board</a>
+            <hr class="text-secondary my-3">
+            <a href="/logout" class="text-danger"><i class="fa-solid fa-power-off"></i>Log Out</a>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <div>
+                <h1 class="h3 fw-bold text-dark mb-1">Attendance Protocol Registry</h1>
+                <p class="text-muted small mb-0">Log roll-call matrices parameters.</p>
+            </div>
+            <a href="/dashboard" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-medium">
+                <i class="fa-solid fa-arrow-left-long me-2"></i>Dashboard Console
+            </a>
+        </div>
+        <div class="glass-card mb-4">
+            <form action="/add_attendance" method="POST" class="row g-3 align-items-end">
+                <div class="col-12 col-sm-4">
+                    <label class="form-label small text-muted fw-semibold">Target Entity Full Name</label>
+                    <input type="text" name="student_name" class="form-control rounded-3" placeholder="Student Name" required>
+                </div>
+                <div class="col-12 col-sm-3">
+                    <label class="form-label small text-muted fw-semibold">Target Timestamp Node</label>
+                    <input type="date" name="date" class="form-control rounded-3" required>
+                </div>
+                <div class="col-12 col-sm-3">
+                    <label class="form-label small text-muted fw-semibold">Status Verification Metric</label>
+                    <select name="status" class="form-select rounded-3">
+                        <option>Present</option>
+                        <option>Absent</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-2">
+                    <button class="btn btn-primary w-100 rounded-3">Commit Row</button>
+                </div>
+            </form>
+        </div>
+        <div class="glass-card">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr class="table-light">
+                            <th>Record Node</th>
+                            <th>Identity String</th>
+                            <th>Logged Timestamp</th>
+                            <th>Status State</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in attendance %}
+                        <tr>
+                            <td class="text-muted">#{{ a[0] }}</td>
+                            <td class="fw-medium text-dark">{{ a[1] }}</td>
+                            <td>{{ a[2] }}</td>
+                            <td>
+                                {% if a[3] == 'Present' %}
+                                <span class="badge bg-success-subtle text-success px-2.5 py-1">Present</span>
+                                {% else %}
+                                <span class="badge bg-danger-subtle text-danger px-2.5 py-1">Absent</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

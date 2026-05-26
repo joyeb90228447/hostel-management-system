@@ -1,56 +1,69 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-
-<title>Notice Board</title>
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-      rel="stylesheet">
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusCore - Notice Board</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root { --slate-dark: #0f172a; --slate-light: #f8fafc; --accent-blue: #2563eb; }
+        body { background-color: var(--slate-light); font-family: 'Segoe UI', system-ui, sans-serif; overflow-x: hidden; }
+        .sidebar { height: 100vh; width: 260px; position: fixed; top: 0; left: 0; background: var(--slate-dark); padding: 24px 16px; z-index: 1000; }
+        .sidebar-brand { color: #ffffff; font-size: 1.3rem; font-weight: 800; text-decoration: none; display: flex; align-items: center; padding-bottom: 24px; border-bottom: 1px solid #1e293b; margin-bottom: 24px; }
+        .sidebar-menu a { display: flex; align-items: center; padding: 12px 16px; color: #94a3b8; text-decoration: none; font-weight: 500; border-radius: 8px; margin-bottom: 4px; }
+        .sidebar-menu a:hover, .sidebar-menu a.active { color: #fff; background: #1e293b; }
+        .sidebar-menu a.active { background: var(--accent-blue); }
+        .sidebar-menu i { margin-right: 12px; width: 20px; }
+        .main-content { margin-left: 260px; padding: 40px; }
+        .glass-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; }
+        @media (max-width: 992px) {
+            .sidebar { width: 100%; height: auto; position: relative; padding: 16px; }
+            .sidebar-brand { display: none; }
+            .sidebar-menu { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+            .sidebar-menu a { padding: 8px 12px; font-size: 0.85rem; }
+            .main-content { margin-left: 0; padding: 20px; }
+        }
+    </style>
 </head>
-
-<body class="bg-dark text-light">
-
-<div class="container mt-5">
-
-<h1 class="mb-4">
-Notice Board
-</h1>
-
-<form action="/add_notice"
-      method="POST">
-
-<input type="text"
-       name="title"
-       class="form-control mb-3"
-       placeholder="Notice Title">
-
-<textarea name="message"
-          class="form-control mb-3"
-          placeholder="Notice Message">
-</textarea>
-
-<button class="btn btn-warning">
-Add Notice
-</button>
-
-</form>
-
-<hr>
-
-{% for notice in notices %}
-
-<div class="card p-4 mb-3">
-
-<h3>{{ notice[1] }}</h3>
-
-<p>{{ notice[2] }}</p>
-
-</div>
-
-{% endfor %}
-
-</div>
-
+<body>
+    <div class="sidebar">
+        <a href="/dashboard" class="sidebar-brand"><i class="fa-solid fa-shield-halved me-2 text-primary"></i>CampusCore</a>
+        <div class="sidebar-menu">
+            <a href="/dashboard"><i class="fa-solid fa-chart-line"></i>Dashboard</a>
+            <a href="/view"><i class="fa-solid fa-users"></i>Students</a>
+            <a href="/rooms"><i class="fa-solid fa-bed"></i>Rooms</a>
+            <a href="/fees"><i class="fa-solid fa-wallet"></i>Fees</a>
+            <a href="/attendance"><i class="fa-solid fa-calendar-check"></i>Attendance</a>
+            <a href="/notice" class="active"><i class="fa-solid fa-flag"></i>Notice Board</a>
+            <hr class="text-secondary my-3">
+            <a href="/logout" class="text-danger"><i class="fa-solid fa-power-off"></i>Log Out</a>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <div>
+                <h1 class="h3 fw-bold text-dark mb-1">Broadcasting Matrix Terminal</h1>
+                <p class="text-muted small mb-0">Publish critical informational nodes across the cluster.</p>
+            </div>
+            <a href="/dashboard" class="btn btn-outline-secondary px-3 py-2 rounded-3 fw-medium">
+                <i class="fa-solid fa-arrow-left-long me-2"></i>Dashboard Console
+            </a>
+        </div>
+        <div class="glass-card mb-4">
+            <h5 class="fw-bold mb-3 text-dark">Broadcast New Notice Payload</h5>
+            <form action="/add_notice" method="POST">
+                <input type="text" name="title" class="form-control rounded-3 mb-3" placeholder="Notice Title Heading" required>
+                <textarea name="message" class="form-control rounded-3 mb-3" rows="3" placeholder="Notice Body Context Payload Details String..." required></textarea>
+                <button class="btn btn-primary rounded-3 px-4 py-2">Publish Announcement</button>
+            </form>
+        </div>
+        {% for notice in notices %}
+        <div class="glass-card mb-3 border-start border-primary border-4">
+            <h5 class="fw-bold text-dark mb-1">{{ notice[1] }}</h5>
+            <p class="text-secondary mb-0 small">{{ notice[2] }}</p>
+        </div>
+        {% endfor %}
+    </div>
 </body>
 </html>

@@ -7,12 +7,11 @@ app = Flask(__name__)
 app.secret_key = "hostel_secret_key"
 
 # ==========================================
-# DATABASE RECONNECTION AUTOMATION
+# CENTRALIZED AUTOMATED RECONNECTION POOL
 # ==========================================
 def check_db():
     global db, cursor
     try:
-        # Pings the remote cluster instance to verify validation status
         db.ping(reconnect=True, attempts=3, delay=2)
     except Exception:
         db = mysql.connector.connect(
@@ -25,7 +24,7 @@ def check_db():
         cursor = db.cursor(buffered=True)
     return cursor
 
-# Base runtime boot connection initialization
+# Connection instantiation on core runtime load
 db = mysql.connector.connect(
     host=os.getenv("MYSQLHOST"),
     user=os.getenv("MYSQLUSER"),
@@ -37,12 +36,11 @@ cursor = db.cursor(buffered=True)
 
 
 # ==========================================
-# PUBLIC HOME ROUTE
+# GUEST PLATFORM ENVIRONMENT
 # ==========================================
 @app.route('/')
 def home():
     local_cursor = check_db()
-    
     local_cursor.execute("SELECT COUNT(*) FROM students")
     total_students = local_cursor.fetchone()[0]
 
@@ -57,101 +55,7 @@ def home():
 
 
 # ==========================================
-# STUDENT REGISTRATION & UTILITIES
-# ==========================================
-@app.route('/register', methods=['POST'])
-def register():
-    name = request.form['name']
-    email = request.form['email']
-    phone = request.form['phone']
-    room = request.form['room']
-    password = request.form['password']
-
-    local_cursor = check_db()
-    sql = """
-    INSERT INTO students (name, email, phone, room_no, password)
-    VALUES (%s, %s, %s, %s, %s)
-    """
-    values = (name, email, phone, room, password)
-    local_cursor.execute(sql, values)
-    db.commit()
-
-    return "Student Registered Successfully! <br><a href='/'>Go Home</a>"
-
-
-@app.route('/view')
-def view_students():
-    if not session.get('admin_logged_in'):
-        return redirect('/admin')
-        
-    local_cursor = check_db()
-    local_cursor.execute("SELECT * FROM students")
-    students = local_cursor.fetchall()
-    return render_template('view_students.html', students=students)
-
-
-@app.route('/edit/<int:id>')
-def edit_student(id):
-    if not session.get('admin_logged_in'):
-        return redirect('/admin')
-
-    local_cursor = check_db()
-    sql = "SELECT * FROM students WHERE id=%s"
-    local_cursor.execute(sql, (id,))
-    student = local_cursor.fetchone()
-    return render_template('edit_student.html', student=student)
-
-
-@app.route('/update/<int:id>', methods=['POST'])
-def update_student(id):
-    if not session.get('admin_logged_in'):
-        return redirect('/admin')
-
-    name = request.form['name']
-    email = request.form['email']
-    phone = request.form['phone']
-    room = request.form['room']
-
-    local_cursor = check_db()
-    sql = """
-    UPDATE students
-    SET name=%s, email=%s, phone=%s, room_no=%s
-    WHERE id=%s
-    """
-    values = (name, email, phone, room, id)
-    local_cursor.execute(sql, values)
-    db.commit()
-    return redirect('/view')
-
-
-@app.route('/delete/<int:id>')
-def delete_student(id):
-    if not session.get('admin_logged_in'):
-        return redirect('/admin')
-
-    local_cursor = check_db()
-    sql = "DELETE FROM students WHERE id=%s"
-    local_cursor.execute(sql, (id,))
-    db.commit()
-    return redirect('/view')
-
-
-@app.route('/search', methods=['POST'])
-def search_student():
-    if not session.get('admin_logged_in'):
-        return redirect('/admin')
-
-    keyword = request.form['keyword']
-    local_cursor = check_db()
-    sql = "SELECT * FROM students WHERE name LIKE %s"
-    value = ("%" + keyword + "%",)
-    local_cursor.execute(sql, value)
-    students = local_cursor.fetchall()
-    return render_template('view_students.html', students=students)
-
-
-# ==========================================
-# AUTHENTICATION LOGISTICS
+# AUTHENTICATION LOGISTICS TERMINAL
 # ==========================================
 @app.route('/login', methods=['GET', 'POST'])
 def login_page():
@@ -188,8 +92,14 @@ def admin_login():
     return render_template('admin_login.html')
 
 
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/')
+
+
 # ==========================================
-# ADMINISTRATIVE CONTROL ECOSYSTEM
+# ADMINISTRATIVE CONTROL MATRIX (SECURE)
 # ==========================================
 @app.route('/dashboard')
 def dashboard():
@@ -214,6 +124,90 @@ def dashboard():
     )
 
 
+# ==========================================
+# CONTROL PANEL SUB-SYSTEMS
+# ==========================================
+@app.route('/register', methods=['POST'])
+def register():
+    name = request.form['name']
+    email = request.form['email']
+    phone = request.form['phone']
+    room = request.form['room']
+    password = request.form['password']
+
+    local_cursor = check_db()
+    sql = "INSERT INTO students (name, email, phone, room_no, password) VALUES (%s, %s, %s, %s, %s)"
+    local_cursor.execute(sql, (name, email, phone, room, password))
+    db.commit()
+
+    return "Student Registered Successfully! <br><a href='/'>Go Home</a>"
+
+
+@app.route('/view')
+def view_students():
+    if not session.get('admin_logged_in'):
+        return redirect('/admin')
+        
+    local_cursor = check_db()
+    local_cursor.execute("SELECT * FROM students")
+    students = local_cursor.fetchall()
+    return render_template('view_students.html', students=students)
+
+
+@app.route('/edit/<int:id>')
+def edit_student(id):
+    if not session.get('admin_logged_in'):
+        return redirect('/admin')
+
+    local_cursor = check_db()
+    local_cursor.execute("SELECT * FROM students WHERE id=%s", (id,))
+    student = local_cursor.fetchone()
+    return render_template('edit_student.html', student=student)
+
+
+@app.route('/update/<int:id>', methods=['POST'])
+def update_student(id):
+    if not session.get('admin_logged_in'):
+        return redirect('/admin')
+
+    name = request.form['name']
+    email = request.form['email']
+    phone = request.form['phone']
+    room = request.form['room']
+
+    local_cursor = check_db()
+    sql = "UPDATE students SET name=%s, email=%s, phone=%s, room_no=%s WHERE id=%s"
+    local_cursor.execute(sql, (name, email, phone, room, id))
+    db.commit()
+    return redirect('/view')
+
+
+@app.route('/delete/<int:id>')
+def delete_student(id):
+    if not session.get('admin_logged_in'):
+        return redirect('/admin')
+
+    local_cursor = check_db()
+    local_cursor.execute("DELETE FROM students WHERE id=%s", (id,))
+    db.commit()
+    return redirect('/view')
+
+
+@app.route('/search', methods=['POST'])
+def search_student():
+    if not session.get('admin_logged_in'):
+        return redirect('/admin')
+
+    keyword = request.form['keyword']
+    local_cursor = check_db()
+    local_cursor.execute("SELECT * FROM students WHERE name LIKE %s", ("%" + keyword + "%",))
+    students = local_cursor.fetchall()
+    return render_template('view_students.html', students=students)
+
+
+# ==========================================
+# INVENTORY CONTROL LOGISTICS
+# ==========================================
 @app.route('/rooms')
 def rooms():
     if not session.get('admin_logged_in'):
@@ -233,22 +227,17 @@ def add_room():
     room_no = request.form['room_no']
     capacity = request.form['capacity']
     occupied = request.form['occupied']
-
-    if int(occupied) >= int(capacity):
-        status = "Full"
-    else:
-        status = "Available"
+    status = "Full" if int(occupied) >= int(capacity) else "Available"
 
     local_cursor = check_db()
     sql = "INSERT INTO rooms (room_no, capacity, occupied, status) VALUES (%s, %s, %s, %s)"
-    values = (room_no, capacity, occupied, status)
-    local_cursor.execute(sql, values)
+    local_cursor.execute(sql, (room_no, capacity, occupied, status))
     db.commit()
     return redirect('/rooms')
 
 
 # ==========================================
-# COMPLAINTS MODULE
+# COMPLAINTS MATRIX OPERATIONS
 # ==========================================
 @app.route('/complaint')
 def complaint_page():
@@ -262,15 +251,13 @@ def save_complaint():
 
     local_cursor = check_db()
     sql = "INSERT INTO complaints (student_name, complaint) VALUES (%s, %s)"
-    values = (student_name, complaint)
-    local_cursor.execute(sql, values)
+    local_cursor.execute(sql, (student_name, complaint))
     db.commit()
-
     return "Complaint Submitted Successfully! <br><a href='/'>Go Home</a>"
 
 
 # ==========================================
-# FEES CONFIGURATION
+# ECONOMIC MANAGEMENT LEDGER
 # ==========================================
 @app.route('/fees')
 def fees_page():
@@ -294,14 +281,13 @@ def add_fee():
 
     local_cursor = check_db()
     sql = "INSERT INTO fees (student_name, amount, status) VALUES (%s, %s, %s)"
-    values = (student_name, amount, status)
-    local_cursor.execute(sql, values)
+    local_cursor.execute(sql, (student_name, amount, status))
     db.commit()
     return redirect('/fees')
 
 
 # ==========================================
-# ATTENDANCE PROTOCOLS
+# SECURITY TRACKER SYSTEM (ATTENDANCE)
 # ==========================================
 @app.route('/attendance')
 def attendance():
@@ -325,14 +311,13 @@ def add_attendance():
 
     local_cursor = check_db()
     sql = "INSERT INTO attendance (student_name, date, status) VALUES (%s, %s, %s)"
-    values = (student_name, date, status)
-    local_cursor.execute(sql, values)
+    local_cursor.execute(sql, (student_name, date, status))
     db.commit()
     return redirect('/attendance')
 
 
 # ==========================================
-# COMMUNICATIONS SYSTEM (NOTICES)
+# PUBLIC NETWORK ANNOUNCEMENT SYSTEM
 # ==========================================
 @app.route('/notice')
 def notice():
@@ -355,31 +340,27 @@ def add_notice():
 
     local_cursor = check_db()
     sql = "INSERT INTO notices (title, message) VALUES (%s, %s)"
-    values = (title, message)
-    local_cursor.execute(sql, values)
+    local_cursor.execute(sql, (title, message))
     db.commit()
     return redirect('/notice')
 
 
 # ==========================================
-# SECURE PROFILE INTERFACES
+# DATA CLUSTER ENDPOINTS (PROFILES & REPORT)
 # ==========================================
 @app.route('/profile/<email>')
 def profile(email):
     local_cursor = check_db()
-    sql = "SELECT * FROM students WHERE email=%s"
-    local_cursor.execute(sql, (email,))
+    local_cursor.execute("SELECT * FROM students WHERE email=%s", (email,))
     student = local_cursor.fetchone()
 
     if not student:
         return "Student profile not found."
 
-    fee_sql = "SELECT * FROM fees WHERE student_name=%s"
-    local_cursor.execute(fee_sql, (student[1],))
+    local_cursor.execute("SELECT * FROM fees WHERE student_name=%s", (student[1],))
     fees_data = local_cursor.fetchall()
 
-    attendance_sql = "SELECT * FROM attendance WHERE student_name=%s"
-    local_cursor.execute(attendance_sql, (student[1],))
+    local_cursor.execute("SELECT * FROM attendance WHERE student_name=%s", (student[1],))
     attendance_data = local_cursor.fetchall()
 
     return render_template(
@@ -390,9 +371,6 @@ def profile(email):
     )
 
 
-# ==========================================
-# REPORT COMPILATION ENGINE
-# ==========================================
 @app.route('/pdf')
 def export_pdf():
     if not session.get('admin_logged_in'):
