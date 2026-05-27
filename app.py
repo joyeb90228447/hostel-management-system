@@ -40,7 +40,6 @@ cursor = db.cursor(buffered=True)
 # ==========================================
 @app.route('/')
 def gateway_portal():
-    # Clear any stale session data on root access
     return render_template('gateway.html')
 
 
@@ -62,7 +61,6 @@ def login_page():
             session['student_name'] = student[1]
             return redirect(f'/profile/{student[2]}')
         else:
-            # Render templates standard injection layer for safe back navigation inside app
             return render_template('login.html', error="Invalid Student Credentials. Please try again.")
             
     return render_template('login.html')
@@ -133,12 +131,12 @@ def register():
     name = request.form['name']
     email = request.form['email']
     phone = request.form['phone']
-    room = request.form['room'].strip()  # .strip() filters out accidental spaces
+    room = request.form['room'].strip()
     password = request.form['password']
 
     local_cursor = check_db()
     
-    # 🛑 FLUSH VALIDATION: Check if room exists and has vacant beds before inserting student
+    # Check if room exists and has vacant beds before inserting student
     local_cursor.execute("SELECT capacity, occupied FROM rooms WHERE room_no = %s", (room,))
     room_data = local_cursor.fetchone()
     
@@ -155,15 +153,13 @@ def register():
     sql = "INSERT INTO students (name, email, phone, room_no, password) VALUES (%s, %s, %s, %s, %s)"
     local_cursor.execute(sql, (name, email, phone, room, password))
     
-    # Step B: AUTOMATIC ROOM CAPACITY MINUS LOGIC (+1 Occupied / Status Flag)
+    # Step B: AUTOMATIC ROOM CAPACITY MINUS LOGIC (+1 Occupied)
     new_occupied = occupied + 1
     new_status = "Full" if new_occupied >= capacity else "Available"
     
-    # Update rooms inventory status layers
     update_room_sql = "UPDATE rooms SET occupied = %s, status = %s WHERE room_no = %s"
     local_cursor.execute(update_room_sql, (new_occupied, new_status, room))
         
-    # Thread safety reference global database commit
     db.commit()
     return redirect('/view')
 
@@ -198,11 +194,36 @@ def update_student(id):
     name = request.form['name']
     email = request.form['email']
     phone = request.form['phone']
-    room = request.form['room']
+    new_room = request.form['room'].strip()
 
     local_cursor = check_db()
+
+    # Get current room information before update for logic calibration
+    local_cursor.execute("SELECT room_no FROM students WHERE id=%s", (id,))
+    old_room_data = local_cursor.fetchone()
+    
+    if old_room_data:
+        old_room = old_room_data[0]
+        
+        # If the room number has changed, shift inventory counters automatically
+        if old_room != new_room:
+            # 1. De-allocate from old room (-1 Occupied)
+            local_cursor.execute("SELECT capacity, occupied FROM rooms WHERE room_no = %s", (old_room,))
+            old_rd = local_cursor.fetchone()
+            if old_rd:
+                dec_occupied = max(0, old_rd[1] - 1)
+                local_cursor.execute("UPDATE rooms SET occupied=%s, status='Available' WHERE room_no=%s", (dec_occupied, old_room))
+            
+            # 2. Allocate to new room (+1 Occupied)
+            local_cursor.execute("SELECT capacity, occupied FROM rooms WHERE room_no = %s", (new_room,))
+            new_rd = local_cursor.fetchone()
+            if new_rd:
+                inc_occupied = new_rd[1] + 1
+                new_stat = "Full" if inc_occupied >= new_rd[0] else "Available"
+                local_cursor.execute("UPDATE rooms SET occupied=%s, status=%s WHERE room_no=%s", (inc_occupied, new_stat, new_room))
+
     sql = "UPDATE students SET name=%s, email=%s, phone=%s, room_no=%s WHERE id=%s"
-    local_cursor.execute(sql, (name, email, phone, room, id))
+    local_cursor.execute(sql, (name, email, phone, new_room, id))
     db.commit()
     return redirect('/view')
 
@@ -213,6 +234,18 @@ def delete_student(id):
         return redirect('/admin')
 
     local_cursor = check_db()
+    
+    # Automated clean-up counter decrement before student profile drop
+    local_cursor.execute("SELECT room_no FROM students WHERE id=%s", (id,))
+    student_room = local_cursor.fetchone()
+    if student_room:
+        room = student_room[0]
+        local_cursor.execute("SELECT occupied FROM rooms WHERE room_no = %s", (room,))
+        rm_occ = local_cursor.fetchone()
+        if rm_occ:
+            new_occ = max(0, rm_occ[0] - 1)
+            local_cursor.execute("UPDATE rooms SET occupied=%s, status='Available' WHERE room_no=%s", (new_occ, room))
+
     local_cursor.execute("DELETE FROM students WHERE id=%s", (id,))
     db.commit()
     return redirect('/view')
@@ -308,7 +341,7 @@ def add_fee():
     # Auto-assign Status based on math results
     if remaining_amount <= 0:
         status = "Paid"
-        remaining_amount = 0  # Preclude negative balances
+        remaining_amount = 0
     elif paid_amount > 0 and remaining_amount > 0:
         status = "Partial"
     else:
@@ -396,7 +429,7 @@ def profile(email):
 
 
 # ==========================================
-# EXPORT DATA DATA TO PDF
+# EXPORT DATA TO PDF
 # ==========================================
 @app.route('/pdf')
 def export_pdf():
@@ -424,6 +457,8 @@ def export_pdf():
 
     c.save()
     return send_file(pdf_file, as_attachment=True)
+
+
 # ==========================================
 # EMERGENCY CLOUD RE-INDEX MATRIX (TEMPORARY)
 # ==========================================
@@ -482,6 +517,15 @@ def force_db_sync_2026():
         """)
 
         local_cursor.execute("""
+        CREATE TABLE complaints (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            student_name VARCHAR(100) NOT NULL,
+            complaint TEXT NOT NULL,
+            date_raised TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        local_cursor.execute("""
         CREATE TABLE notices (
             id INT AUTO_INCREMENT PRIMARY KEY,
             title VARCHAR(200) NOT NULL,
@@ -497,6 +541,7 @@ def force_db_sync_2026():
         return "<h1>🎉 SUCCESS: Cloud Cluster Database Recreated Flawlessly!</h1>"
     except Exception as e:
         return f"<h1>Structural Error: {str(e)}</h1>"
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)
